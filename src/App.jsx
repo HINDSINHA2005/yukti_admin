@@ -110,7 +110,7 @@ export default function App() {
   const meta = getPageMeta();
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans">
+    <div className="flex min-h-screen bg-slate-50 text-slate-800 font-sans">
       {/* Sidebar Navigation */}
       <Sidebar
         activeTab={activeTab}
