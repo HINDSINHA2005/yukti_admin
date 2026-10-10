@@ -6,6 +6,10 @@ import {
   Users, 
   Briefcase, 
   GraduationCap, 
+  Award,
+  Calendar,
+  Megaphone,
+  MessageSquareQuote,
   Settings, 
   LogOut, 
   ExternalLink,
@@ -15,6 +19,10 @@ import {
 
 const MENU_ITEMS = [
   { id: 'dashboard', label: 'Dashboard Overview', icon: LayoutDashboard },
+  { id: 'batches', label: 'Upcoming Batches', icon: Calendar },
+  { id: 'certificates', label: 'Certificates & Offers', icon: Award },
+  { id: 'announcements', label: 'Announcements & Banner', icon: Megaphone },
+  { id: 'reviews', label: 'Student Reviews & Stories', icon: MessageSquareQuote },
   { id: 'enquiries', label: 'Leads & Enquiries', icon: Inbox, badge: 'Live' },
   { id: 'gallery', label: 'Gallery Media', icon: ImageIcon },
   { id: 'team', label: 'Meet the Team', icon: Users },

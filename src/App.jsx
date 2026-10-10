@@ -8,6 +8,10 @@ import GalleryAdminPage from './pages/GalleryAdminPage';
 import TeamAdminPage from './pages/TeamAdminPage';
 import InternshipsAdminPage from './pages/InternshipsAdminPage';
 import CoursesAdminPage from './pages/CoursesAdminPage';
+import BatchesAdminPage from './pages/BatchesAdminPage';
+import CertificatesAdminPage from './pages/CertificatesAdminPage';
+import AnnouncementsAdminPage from './pages/AnnouncementsAdminPage';
+import ReviewsAdminPage from './pages/ReviewsAdminPage';
 import SettingsPage from './pages/SettingsPage';
 import { getEnquiries, getCollectionItems } from './services/adminService';
 import { initFirebase } from './firebase';
@@ -98,6 +102,14 @@ export default function App() {
         return { title: 'Meet the Team', subtitle: 'Executive leadership, faculty & mentors' };
       case 'internships':
         return { title: 'Internships & Careers', subtitle: 'Job openings and student technology tracks' };
+      case 'batches':
+        return { title: 'Upcoming & Ongoing Batches', subtitle: 'Manage class schedules, timings, seat availability and course batches' };
+      case 'certificates':
+        return { title: 'Certificate & Offer Studio', subtitle: 'Generate, authenticate and print certificates & offer letters' };
+      case 'announcements':
+        return { title: 'Announcements & Banner Manager', subtitle: 'Control top header notices, discounts & address live' };
+      case 'reviews':
+        return { title: 'Student Reviews & Success Stories', subtitle: 'Manage student placement records, CTC packages & 5-star ratings' };
       case 'courses':
         return { title: 'Course Management', subtitle: 'Add dynamic IT courses and syllabus tracks' };
       case 'settings':
@@ -135,6 +147,22 @@ export default function App() {
               setActiveTab={setActiveTab}
               enquiries={enquiries}
             />
+          )}
+
+          {activeTab === 'batches' && (
+            <BatchesAdminPage />
+          )}
+
+          {activeTab === 'certificates' && (
+            <CertificatesAdminPage />
+          )}
+
+          {activeTab === 'announcements' && (
+            <AnnouncementsAdminPage />
+          )}
+
+          {activeTab === 'reviews' && (
+            <ReviewsAdminPage />
           )}
 
           {activeTab === 'enquiries' && (
