@@ -14,11 +14,13 @@ import {
   LogOut, 
   ExternalLink,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  BookOpen
 } from 'lucide-react';
 
 const MENU_ITEMS = [
   { id: 'dashboard', label: 'Dashboard Overview', icon: LayoutDashboard },
+  { id: 'workshops', label: 'Workshop Registry', icon: BookOpen },
   { id: 'batches', label: 'Upcoming Batches', icon: Calendar },
   { id: 'certificates', label: 'Certificates & Offers', icon: Award },
   { id: 'announcements', label: 'Announcements & Banner', icon: Megaphone },
@@ -31,7 +33,7 @@ const MENU_ITEMS = [
   { id: 'settings', label: 'System & API Keys', icon: Settings },
 ];
 
-export default function Sidebar({ activeTab, setActiveTab, onLogout, newEnquiriesCount = 0 }) {
+export default function Sidebar({ activeTab, setActiveTab, onLogout, newEnquiriesCount = 0, currentUser }) {
   return (
     <aside className="w-68 bg-white border-r border-slate-200/90 flex flex-col justify-between shrink-0 min-h-screen shadow-sm z-20">
       <div>
@@ -85,6 +87,22 @@ export default function Sidebar({ activeTab, setActiveTab, onLogout, newEnquirie
 
       {/* Footer Quick Links & Logout */}
       <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-2">
+        {/* Admin User Identity Pill */}
+        <div className="px-3 py-2 rounded-xl bg-white border border-slate-200 shadow-2xs flex items-center space-x-2.5">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-brand-600 to-accent-primary text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+            {(currentUser?.email || 'A')[0].toUpperCase()}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-bold text-slate-800 truncate" title={currentUser?.email || 'contact@yuktisoftware.com'}>
+              {currentUser?.email || 'contact@yuktisoftware.com'}
+            </p>
+            <p className="text-[9px] font-bold text-emerald-600 flex items-center space-x-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+              <span>Firebase Auth Active</span>
+            </p>
+          </div>
+        </div>
+
         <a
           href="https://yuktisoftware.com"
           target="_blank"

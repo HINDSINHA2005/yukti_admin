@@ -1,4 +1,4 @@
-import { db } from '../firebase';
+import { db } from '../firebase.js';
 import { 
   collection, 
   getDocs, 
@@ -21,14 +21,24 @@ export async function getCollectionItems(collectionName, sortField = 'createdAt'
   }
 
   try {
-    let q;
+    let snapshot;
     try {
-      q = query(collection(db, collectionName), orderBy(sortField, direction));
-    } catch {
-      q = collection(db, collectionName);
+      const q = query(collection(db, collectionName), orderBy(sortField, direction));
+      snapshot = await getDocs(q);
+    } catch (orderErr) {
+      console.warn(`[AdminService] OrderBy failed for ${collectionName}, falling back to plain fetch:`, orderErr.message);
+      snapshot = await getDocs(collection(db, collectionName));
     }
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Client-side fallback sort
+    return items.sort((a, b) => {
+      const valA = a[sortField] || a.submittedAt || a.createdAt || '';
+      const valB = b[sortField] || b.submittedAt || b.createdAt || '';
+      return direction === 'desc'
+        ? String(valB).localeCompare(String(valA))
+        : String(valA).localeCompare(String(valB));
+    });
   } catch (err) {
     console.error(`[AdminService] Error fetching ${collectionName}:`, err);
     throw err;
@@ -106,6 +116,7 @@ export async function createCertificateDoc(data = {}) {
   const prefix = 
     type === 'internship_offer' ? 'YUK-OFFER' :
     type === 'mou' ? 'YUK-MOU' :
+    type === 'workshop_certificate' ? 'YUK-WS' :
     type === 'internship_certificate' ? 'YUK-INT' : 'YUK-CERT';
 
   const randomNum = Math.floor(1000 + Math.random() * 9000);
@@ -154,4 +165,94 @@ export async function deleteCertificateDoc(certId) {
   await deleteDoc(doc(db, 'certificates', certId));
   return true;
 }
+
+/**
+ * Workshop Registrations Helper Functions
+ */
+export async function getWorkshopRegistrations() {
+  return getCollectionItems('workshop_registrations', 'submittedAt', 'desc');
+}
+
+export async function updateWorkshopRegistration(id, data) {
+  return updateItem('workshop_registrations', id, data);
+}
+
+export async function deleteWorkshopRegistration(id) {
+  return deleteItem('workshop_registrations', id);
+}
+
+/**
+ * Generates an Official Verified Certificate for a Workshop Attendee
+ * Saves in `certificates` collection and updates registration status
+ */
+export async function generateWorkshopCertificate(registration, options = {}) {
+  if (!db) throw new Error('Firestore not initialized.');
+
+  const currentYear = new Date().getFullYear();
+  const randomNum = Math.floor(100000 + Math.random() * 900000);
+  const certId = options.certId || `YUK-WS-${currentYear}-${randomNum}`;
+  
+  const studentName = (registration.studentName || 'Participant').trim();
+  const college = (registration.college || 'College / University').trim();
+  const course = (registration.course || 'Degree Program').trim();
+  const section = registration.section ? ` (${registration.section})` : '';
+  const passingYear = registration.passingYear ? ` • Class of ${registration.passingYear}` : '';
+  const workshopName = (registration.workshopName || 'Full Stack Web Development').trim();
+  const workshopDate = registration.workshopDate || new Date().toISOString().split('T')[0];
+
+  const defaultDescription = `This is to certify that ${studentName} from ${college} (${course}${section}${passingYear}) has actively participated and successfully completed the Hands-on Industrial Workshop on "${workshopName}" conducted by Yukti Software on ${workshopDate}. During this workshop, the participant demonstrated keen learning, analytical skills, and exemplary technical engagement.`;
+
+  const certPayload = {
+    id: certId,
+    certId: certId,
+    type: 'workshop_certificate',
+    subtitle: 'OF WORKSHOP PARTICIPATION & COMPLETION',
+    studentName: studentName,
+    college: college,
+    title: workshopName,
+    duration: 'Hands-on Technical Workshop Session',
+    issueDate: workshopDate,
+    startDate: workshopDate,
+    endDate: workshopDate,
+    grade: options.grade || 'Exemplary Participation (Grade A+)',
+    skills: options.skills || `${workshopName}, Technical Hands-on Lab, Yukti Software Industrial Training`,
+    projectTitle: options.projectTitle || `${workshopName} Practical Implementation`,
+    rollNumber: (registration.rollNumber || '').trim(),
+    description: options.description || defaultDescription,
+    ceoSignatureUrl: options.ceoSignatureUrl || (typeof localStorage !== 'undefined' ? localStorage.getItem('yukti_global_ceo_sign') : '') || '',
+    ctoSignatureUrl: options.ctoSignatureUrl || (typeof localStorage !== 'undefined' ? localStorage.getItem('yukti_global_cto_sign') : '') || '',
+    ceoName: options.ceoName || 'MANISHA KUMARI',
+    ceoTitle: options.ceoTitle || 'Founder & CEO',
+    ctoName: options.ctoName || 'MITHILESH KUMAR',
+    ctoTitle: options.ctoTitle || 'CTO',
+    instructor: options.instructor || 'Lead Technical Workshop Faculty',
+    authorizedSignatory: options.authorizedSignatory || 'Manisha Kumari (Founder & CEO)',
+    status: 'active',
+    verificationSeal: 'Authenticated by Yukti Software Greater Noida',
+    registrationRefId: registration.registrationId || registration.id || '',
+    createdAt: new Date().toISOString(),
+    serverTimestamp: serverTimestamp()
+  };
+
+  const { doc, setDoc, updateDoc } = await import('firebase/firestore');
+  
+  // 1. Create certificate in 'certificates' collection
+  await setDoc(doc(db, 'certificates', certId), certPayload);
+
+  // 2. Mark registration doc as certificateIssued: true
+  if (registration.id) {
+    try {
+      await updateDoc(doc(db, 'workshop_registrations', registration.id), {
+        certificateIssued: true,
+        certificateId: certId,
+        certificateGeneratedAt: new Date().toISOString()
+      });
+    } catch (e) {
+      console.warn('Failed to update registration status:', e);
+    }
+  }
+
+  return certPayload;
+}
+
 

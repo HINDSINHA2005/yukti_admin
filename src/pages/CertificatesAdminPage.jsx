@@ -23,7 +23,8 @@ import {
   Image as ImageIcon,
   PenTool,
   RefreshCw,
-  X
+  X,
+  BookOpen
 } from 'lucide-react';
 import { 
   createCertificateDoc, 
@@ -173,6 +174,15 @@ export default function CertificatesAdminPage() {
         title: 'Academic & Industrial Training Collaboration MoU',
         duration: '3 Years (2026 – 2029)'
       }));
+    } else if (type === 'workshop_certificate') {
+      setFormData(prev => ({
+        ...prev,
+        title: 'Full Stack Web Development with React & Node.js',
+        duration: 'Hands-on Technical Workshop Session',
+        grade: 'Exemplary Participation (Grade A+)',
+        skills: 'Modern Full Stack Web Architecture, React.js, Node.js, Industry Practices',
+        description: `This is to certify that ${prev.studentName || 'Ashu Rai'} from ${prev.college || 'Galgotias University, Greater Noida'} has actively participated and successfully completed the Hands-on Industrial Workshop on "Full Stack Web Development with React & Node.js" conducted by Yukti Software. During this workshop, the participant demonstrated keen learning, analytical skills, and exemplary technical engagement.`
+      }));
     }
   };
 
@@ -221,6 +231,81 @@ export default function CertificatesAdminPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handlePrintCertificate = () => {
+    const printArea = document.getElementById('official-certificate-print-area');
+    if (!printArea) {
+      window.print();
+      return;
+    }
+
+    const printIframe = document.createElement('iframe');
+    printIframe.style.position = 'fixed';
+    printIframe.style.right = '0';
+    printIframe.style.bottom = '0';
+    printIframe.style.width = '0';
+    printIframe.style.height = '0';
+    printIframe.style.border = '0';
+    document.body.appendChild(printIframe);
+
+    const doc = printIframe.contentWindow.document;
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Yukti_Software_Certificate_${(previewDoc?.studentName || 'Candidate').replace(/\s+/g, '_')}_${previewDoc?.id || previewDoc?.certId || ''}</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            @page {
+              size: A4 portrait;
+              margin: 0;
+            }
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              box-sizing: border-box !important;
+            }
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              background: white !important;
+              width: 100% !important;
+              font-family: serif !important;
+            }
+            body {
+              display: flex !important;
+              justify-content: center !important;
+              align-items: flex-start !important;
+              padding: 8mm 6mm !important;
+            }
+            #official-certificate-print-area {
+              width: 100% !important;
+              max-width: 800px !important;
+              margin: 0 auto !important;
+              box-shadow: none !important;
+              border: 3px solid #0c1b33 !important;
+            }
+          </style>
+        </head>
+        <body>
+          ${printArea.outerHTML}
+        </body>
+      </html>
+    `);
+    doc.close();
+
+    setTimeout(() => {
+      printIframe.contentWindow.focus();
+      printIframe.contentWindow.print();
+      setTimeout(() => {
+        if (document.body.contains(printIframe)) {
+          document.body.removeChild(printIframe);
+        }
+      }, 3000);
+    }, 600);
+  };
+
   const filteredCerts = certificates.filter(c => {
     const q = searchQuery.toLowerCase();
     return (
@@ -237,25 +322,42 @@ export default function CertificatesAdminPage() {
       {/* Print Stylesheet Overrides */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
+          @page {
+            size: A4 portrait;
+            margin: 0;
+          }
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            overflow: visible !important;
+            height: auto !important;
+          }
+          aside, header, nav, .print\\:hidden {
+            display: none !important;
+          }
           body * {
-            visibility: hidden;
+            visibility: hidden !important;
           }
           #official-certificate-print-area, #official-certificate-print-area * {
-            visibility: visible;
+            visibility: visible !important;
           }
           #official-certificate-print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100vw;
-            height: 100vh;
-            margin: 0;
-            padding: 20px !important;
+            position: fixed !important;
+            left: 50% !important;
+            top: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: 200mm !important;
+            min-height: 285mm !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 12mm !important;
             box-shadow: none !important;
-            border-width: 4px !important;
-          }
-          .print\\:hidden {
-            display: none !important;
+            border: 3px solid #0c1b33 !important;
+            background: white !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
         }
       `}} />
@@ -503,6 +605,13 @@ export default function CertificatesAdminPage() {
                   desc: 'Official candidate onboarding document with stipend details',
                   icon: Briefcase,
                   color: 'text-indigo-600'
+                },
+                {
+                  id: 'workshop_certificate',
+                  title: 'College Workshop Certificate',
+                  desc: 'Hands-on technical workshop participation & completion certificate',
+                  icon: BookOpen,
+                  color: 'text-emerald-600'
                 },
                 {
                   id: 'mou',
@@ -921,7 +1030,7 @@ export default function CertificatesAdminPage() {
                 <span>Copy Verify Link</span>
               </button>
               <button
-                onClick={() => window.print()}
+                onClick={handlePrintCertificate}
                 className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-black shadow-md transition-all flex items-center space-x-1.5 cursor-pointer"
               >
                 <Printer className="w-4 h-4" />

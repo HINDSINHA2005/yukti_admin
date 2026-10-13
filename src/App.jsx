@@ -12,13 +12,16 @@ import BatchesAdminPage from './pages/BatchesAdminPage';
 import CertificatesAdminPage from './pages/CertificatesAdminPage';
 import AnnouncementsAdminPage from './pages/AnnouncementsAdminPage';
 import ReviewsAdminPage from './pages/ReviewsAdminPage';
+import WorkshopRegistrationsAdminPage from './pages/WorkshopRegistrationsAdminPage';
 import SettingsPage from './pages/SettingsPage';
 import { getEnquiries, getCollectionItems } from './services/adminService';
 import { initFirebase } from './firebase';
+import { subscribeToAuth, signOutAdmin, getCurrentAdminUser } from './services/authService';
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState(() => getCurrentAdminUser());
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('yukti_admin_auth') === 'true';
+    return localStorage.getItem('yukti_admin_auth') === 'true' || !!getCurrentAdminUser();
   });
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -72,6 +75,23 @@ export default function App() {
     }
   };
 
+  // Listen to Firebase Auth state
+  useEffect(() => {
+    const unsubscribe = subscribeToAuth((user) => {
+      if (user) {
+        setCurrentUser(user);
+        setIsAuthenticated(true);
+      } else {
+        const storedAuth = localStorage.getItem('yukti_admin_auth') === 'true';
+        if (!storedAuth) {
+          setCurrentUser(null);
+          setIsAuthenticated(false);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated) {
       loadAllData();
@@ -81,19 +101,29 @@ export default function App() {
     }
   }, [isAuthenticated]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('yukti_admin_auth');
+  const handleLogout = async () => {
+    await signOutAdmin();
+    setCurrentUser(null);
     setIsAuthenticated(false);
   };
 
   if (!isAuthenticated) {
-    return <LoginPage onLogin={() => setIsAuthenticated(true)} />;
+    return (
+      <LoginPage 
+        onLogin={(user) => {
+          if (user) setCurrentUser(user);
+          setIsAuthenticated(true);
+        }} 
+      />
+    );
   }
 
   const getPageMeta = () => {
     switch (activeTab) {
       case 'dashboard':
         return { title: 'Dashboard Overview', subtitle: 'Live telemetry and website metrics' };
+      case 'workshops':
+        return { title: 'Workshop Registrations & Accreditation', subtitle: 'Manage college workshop attendees, sort by campus & issue verified credentials' };
       case 'enquiries':
         return { title: 'Enquiries & Lead Management', subtitle: 'Manage submissions from website forms' };
       case 'gallery':
@@ -129,6 +159,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         onLogout={handleLogout}
         newEnquiriesCount={stats.newEnquiriesCount}
+        currentUser={currentUser}
       />
 
       {/* Main Content Area */}
@@ -147,6 +178,10 @@ export default function App() {
               setActiveTab={setActiveTab}
               enquiries={enquiries}
             />
+          )}
+
+          {activeTab === 'workshops' && (
+            <WorkshopRegistrationsAdminPage />
           )}
 
           {activeTab === 'batches' && (
