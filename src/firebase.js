@@ -15,12 +15,12 @@ export function getFirebaseConfig() {
   const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' && process.env ? process.env : {});
 
   return {
-    apiKey: env.VITE_FIREBASE_API_KEY || 'AIzaSyBtUShIHy6dhnJ2pwRSBt0ef3GbK7M7hb8',
-    authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || 'loginlogout-bae71.firebaseapp.com',
-    projectId: env.VITE_FIREBASE_PROJECT_ID || 'loginlogout-bae71',
-    storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || 'loginlogout-bae71.firebasestorage.app',
-    messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || '462567498722',
-    appId: env.VITE_FIREBASE_APP_ID || '1:462567498722:web:5e8bff98d813654724cfbb'
+    apiKey: env.VITE_FIREBASE_API_KEY || '',
+    authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || '',
+    projectId: env.VITE_FIREBASE_PROJECT_ID || '',
+    storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || '',
+    messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+    appId: env.VITE_FIREBASE_APP_ID || ''
   };
 }
 
