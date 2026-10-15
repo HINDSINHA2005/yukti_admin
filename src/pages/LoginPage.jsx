@@ -8,7 +8,6 @@ import {
   Eye, 
   EyeOff, 
   Sparkles, 
-  KeyRound,
   CheckCircle2,
   RefreshCw
 } from 'lucide-react';
@@ -37,12 +36,6 @@ export default function LoginPage({ onLogin }) {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleFillCredentials = () => {
-    setEmail(OFFICIAL_ADMIN_EMAIL);
-    setPassword('yukti2026');
-    setError('');
   };
 
   return (
@@ -99,13 +92,6 @@ export default function LoginPage({ onLogin }) {
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
               <span>Admin Password</span>
-              <button
-                type="button"
-                onClick={handleFillCredentials}
-                className="text-[10px] text-brand-600 hover:text-brand-700 font-bold hover:underline cursor-pointer"
-              >
-                Auto-fill Default
-              </button>
             </label>
             <div className="relative flex items-center">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3.5" />
@@ -156,17 +142,6 @@ export default function LoginPage({ onLogin }) {
             )}
           </button>
         </form>
-
-        <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-600 space-y-1">
-          <p className="font-bold text-slate-700 flex items-center space-x-1.5">
-            <KeyRound className="w-3.5 h-3.5 text-brand-600" />
-            <span>Master Admin Credentials</span>
-          </p>
-          <p className="font-mono text-[11px] text-slate-600">
-            Email: <strong className="text-slate-800">contact@yuktisoftware.com</strong><br />
-            Password: <strong className="text-slate-800">yukti2026</strong>
-          </p>
-        </div>
 
         <div className="pt-2 border-t border-slate-100 text-center">
           <p className="text-[11px] text-slate-400">
