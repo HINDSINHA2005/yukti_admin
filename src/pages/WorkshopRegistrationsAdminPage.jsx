@@ -234,7 +234,7 @@ export default function WorkshopRegistrationsAdminPage() {
       `"${r.workshopDate || ''}"`,
       r.certificateIssued ? 'YES' : 'NO',
       `"${r.certificateId || ''}"`,
-      r.certificateId ? `"https://yuktisoftware.com/verify?id=${r.certificateId}"` : '""',
+      r.certificateId ? `"https://www.yuktisoftware.com/verify/?id=${r.certificateId}"` : '""',
       `"${r.submittedAt || ''}"`
     ]);
 
@@ -259,7 +259,7 @@ export default function WorkshopRegistrationsAdminPage() {
 
   // Copy Verification URL
   const handleCopyLink = (certId) => {
-    const url = `https://yuktisoftware.com/verify?id=${encodeURIComponent(certId)}`;
+    const url = `https://www.yuktisoftware.com/verify/?id=${encodeURIComponent(certId)}`;
     navigator.clipboard.writeText(url);
     setCopiedId(certId);
     setTimeout(() => setCopiedId(null), 2000);
@@ -273,13 +273,29 @@ export default function WorkshopRegistrationsAdminPage() {
       return;
     }
 
+    // Remove any stale print iframe
+    const prevIframe = document.getElementById('workshop-certificate-print-frame');
+    if (prevIframe) {
+      prevIframe.remove();
+    }
+
+    // Grab all stylesheets and compiled styles from current document
+    const headStyles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+      .map(el => el.outerHTML)
+      .join('\n');
+
+    // Create properly dimensioned invisible iframe
     const printIframe = document.createElement('iframe');
+    printIframe.id = 'workshop-certificate-print-frame';
     printIframe.style.position = 'fixed';
-    printIframe.style.right = '0';
-    printIframe.style.bottom = '0';
-    printIframe.style.width = '0';
-    printIframe.style.height = '0';
-    printIframe.style.border = '0';
+    printIframe.style.top = '0';
+    printIframe.style.left = '0';
+    printIframe.style.width = '100vw';
+    printIframe.style.height = '100vh';
+    printIframe.style.border = 'none';
+    printIframe.style.zIndex = '-99999';
+    printIframe.style.opacity = '0';
+    printIframe.style.pointerEvents = 'none';
     document.body.appendChild(printIframe);
 
     const doc = printIframe.contentWindow.document;
@@ -290,49 +306,105 @@ export default function WorkshopRegistrationsAdminPage() {
         <head>
           <meta charset="utf-8">
           <title>Yukti_Software_Certificate_${(previewCert?.studentName || 'Participant').replace(/\s+/g, '_')}_${previewCert?.id || previewCert?.certId || ''}</title>
-          <script src="https://cdn.tailwindcss.com"></script>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+          ${headStyles}
           <style>
             @page {
               size: A4 portrait;
-              margin: 0;
+              margin: 6mm 4mm;
             }
-            body {
-              margin: 0;
-              padding: 0;
-              background: white;
+            * {
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
+              box-sizing: border-box !important;
+            }
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              width: 100% !important;
+              min-height: 100% !important;
+              font-family: serif !important;
+            }
+            body {
+              display: flex !important;
+              justify-content: center !important;
+              align-items: flex-start !important;
+              padding: 4mm !important;
+              background-color: #ffffff !important;
             }
             #official-certificate-print-area {
-              box-shadow: none !important;
-              border-radius: 0 !important;
+              display: block !important;
               width: 100% !important;
-              max-width: 100% !important;
-              min-height: 100vh !important;
-              height: 100vh !important;
-              box-sizing: border-box !important;
-              padding: 38px !important;
+              max-width: 800px !important;
+              margin: 0 auto !important;
+              box-shadow: none !important;
               border: 3.5px solid #0c1b33 !important;
+              background: #ffffff !important;
+              color: #0c1b33 !important;
+              visibility: visible !important;
+            }
+            #official-certificate-print-area * {
+              visibility: visible !important;
             }
           </style>
         </head>
-        <body class="flex items-center justify-center min-h-screen">
+        <body class="bg-white text-[#0c1b33]">
           ${printArea.outerHTML}
-          <script>
-            window.onload = function() {
-              setTimeout(function() {
-                window.focus();
-                window.print();
-                window.onafterprint = function() {
-                  window.parent.document.body.removeChild(window.frameElement);
-                };
-              }, 400);
-            };
-          </script>
         </body>
       </html>
     `);
     doc.close();
+
+    const doPrint = () => {
+      setTimeout(() => {
+        try {
+          printIframe.contentWindow.focus();
+          printIframe.contentWindow.print();
+        } catch (err) {
+          console.error('Print iframe trigger error:', err);
+          window.print();
+        } finally {
+          setTimeout(() => {
+            if (document.body.contains(printIframe)) {
+              document.body.removeChild(printIframe);
+            }
+          }, 4000);
+        }
+      }, 350);
+    };
+
+    // Ensure all images are loaded before printing
+    const imgs = printIframe.contentDocument ? Array.from(printIframe.contentDocument.images) : [];
+    if (imgs.length === 0) {
+      doPrint();
+    } else {
+      let loaded = 0;
+      let fired = false;
+      const onDone = () => {
+        loaded++;
+        if (loaded >= imgs.length && !fired) {
+          fired = true;
+          doPrint();
+        }
+      };
+      imgs.forEach((img) => {
+        if (img.complete) {
+          onDone();
+        } else {
+          img.addEventListener('load', onDone);
+          img.addEventListener('error', onDone);
+        }
+      });
+      setTimeout(() => {
+        if (!fired) {
+          fired = true;
+          doPrint();
+        }
+      }, 1500);
+    }
   };
 
   // Format clean phone for WhatsApp
@@ -730,7 +802,7 @@ export default function WorkshopRegistrationsAdminPage() {
                                 </button>
                                 <span>•</span>
                                 <a
-                                  href={`https://yuktisoftware.com/verify?id=${encodeURIComponent(reg.certificateId)}`}
+                                  href={`https://www.yuktisoftware.com/verify/?id=${encodeURIComponent(reg.certificateId)}`}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="text-slate-500 hover:text-brand-600 inline-flex items-center space-x-0.5"
@@ -982,7 +1054,7 @@ export default function WorkshopRegistrationsAdminPage() {
                   <div className="text-center space-y-1">
                     <div className="inline-block p-1 bg-white border border-slate-300 rounded-lg shadow-xs">
                       <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('https://yuktisoftware.com/verify?id=' + (previewCert.id || previewCert.certId))}`}
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('https://www.yuktisoftware.com/verify/')}`}
                         alt="Verify QR Code"
                         className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
                       />

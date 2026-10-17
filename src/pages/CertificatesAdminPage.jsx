@@ -225,7 +225,7 @@ export default function CertificatesAdminPage() {
   };
 
   const copyVerifyLink = (id) => {
-    const url = `https://yuktisoftware.com/verify?id=${encodeURIComponent(id)}`;
+    const url = `https://www.yuktisoftware.com/verify/?id=${encodeURIComponent(id)}`;
     navigator.clipboard.writeText(url);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -238,13 +238,29 @@ export default function CertificatesAdminPage() {
       return;
     }
 
+    // Remove any stale print iframe
+    const prevIframe = document.getElementById('certificate-print-frame');
+    if (prevIframe) {
+      prevIframe.remove();
+    }
+
+    // Grab all stylesheets and compiled styles from the current document
+    const headStyles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+      .map(el => el.outerHTML)
+      .join('\n');
+
+    // Create a full-dimension invisible iframe to guarantee proper layout engine calculation
     const printIframe = document.createElement('iframe');
+    printIframe.id = 'certificate-print-frame';
     printIframe.style.position = 'fixed';
-    printIframe.style.right = '0';
-    printIframe.style.bottom = '0';
-    printIframe.style.width = '0';
-    printIframe.style.height = '0';
-    printIframe.style.border = '0';
+    printIframe.style.top = '0';
+    printIframe.style.left = '0';
+    printIframe.style.width = '100vw';
+    printIframe.style.height = '100vh';
+    printIframe.style.border = 'none';
+    printIframe.style.zIndex = '-99999';
+    printIframe.style.opacity = '0';
+    printIframe.style.pointerEvents = 'none';
     document.body.appendChild(printIframe);
 
     const doc = printIframe.contentWindow.document;
@@ -255,11 +271,14 @@ export default function CertificatesAdminPage() {
         <head>
           <meta charset="utf-8">
           <title>Yukti_Software_Certificate_${(previewDoc?.studentName || 'Candidate').replace(/\s+/g, '_')}_${previewDoc?.id || previewDoc?.certId || ''}</title>
-          <script src="https://cdn.tailwindcss.com"></script>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+          ${headStyles}
           <style>
             @page {
               size: A4 portrait;
-              margin: 0;
+              margin: 6mm 4mm;
             }
             * {
               -webkit-print-color-adjust: exact !important;
@@ -269,41 +288,91 @@ export default function CertificatesAdminPage() {
             html, body {
               margin: 0 !important;
               padding: 0 !important;
-              background: white !important;
+              background: #ffffff !important;
               width: 100% !important;
+              min-height: 100% !important;
               font-family: serif !important;
             }
             body {
               display: flex !important;
               justify-content: center !important;
               align-items: flex-start !important;
-              padding: 8mm 6mm !important;
+              padding: 4mm !important;
+              background-color: #ffffff !important;
             }
             #official-certificate-print-area {
+              display: block !important;
               width: 100% !important;
               max-width: 800px !important;
               margin: 0 auto !important;
               box-shadow: none !important;
               border: 3px solid #0c1b33 !important;
+              background: #ffffff !important;
+              color: #0c1b33 !important;
+              visibility: visible !important;
+            }
+            #official-certificate-print-area * {
+              visibility: visible !important;
             }
           </style>
         </head>
-        <body>
+        <body class="bg-white text-[#0c1b33]">
           ${printArea.outerHTML}
         </body>
       </html>
     `);
     doc.close();
 
-    setTimeout(() => {
-      printIframe.contentWindow.focus();
-      printIframe.contentWindow.print();
+    const doPrint = () => {
       setTimeout(() => {
-        if (document.body.contains(printIframe)) {
-          document.body.removeChild(printIframe);
+        try {
+          printIframe.contentWindow.focus();
+          printIframe.contentWindow.print();
+        } catch (err) {
+          console.error('Iframe print error, falling back to window.print():', err);
+          window.print();
+        } finally {
+          setTimeout(() => {
+            if (document.body.contains(printIframe)) {
+              document.body.removeChild(printIframe);
+            }
+          }, 4000);
         }
-      }, 3000);
-    }, 600);
+      }, 350);
+    };
+
+    // Ensure all images (QR code, logo, signatures) inside the iframe are fully loaded before printing
+    const iframeImages = printIframe.contentDocument ? Array.from(printIframe.contentDocument.images) : [];
+    if (iframeImages.length === 0) {
+      doPrint();
+    } else {
+      let loadedCount = 0;
+      let hasTriggered = false;
+      const onImageLoaded = () => {
+        loadedCount++;
+        if (loadedCount >= iframeImages.length && !hasTriggered) {
+          hasTriggered = true;
+          doPrint();
+        }
+      };
+
+      iframeImages.forEach((img) => {
+        if (img.complete) {
+          onImageLoaded();
+        } else {
+          img.addEventListener('load', onImageLoaded);
+          img.addEventListener('error', onImageLoaded);
+        }
+      });
+
+      // Fallback timeout in case of slow image response
+      setTimeout(() => {
+        if (!hasTriggered) {
+          hasTriggered = true;
+          doPrint();
+        }
+      }, 1500);
+    }
   };
 
   const filteredCerts = certificates.filter(c => {
@@ -319,12 +388,12 @@ export default function CertificatesAdminPage() {
   return (
     <div className="p-4 sm:p-8 space-y-6 max-w-7xl mx-auto">
       
-      {/* Print Stylesheet Overrides */}
+      {/* Print Stylesheet Overrides for Native Print */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           @page {
             size: A4 portrait;
-            margin: 0;
+            margin: 6mm 4mm;
           }
           html, body {
             margin: 0 !important;
@@ -333,24 +402,27 @@ export default function CertificatesAdminPage() {
             overflow: visible !important;
             height: auto !important;
           }
-          aside, header, nav, .print\\:hidden {
+          aside, header, nav, .print\\:hidden, #certificate-print-frame {
             display: none !important;
           }
-          body * {
-            visibility: hidden !important;
+          body > #root > div {
+            display: block !important;
+            background: white !important;
           }
-          #official-certificate-print-area, #official-certificate-print-area * {
-            visibility: visible !important;
+          main {
+            overflow: visible !important;
+            padding: 0 !important;
+            margin: 0 !important;
           }
           #official-certificate-print-area {
-            position: fixed !important;
-            left: 50% !important;
-            top: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            width: 200mm !important;
-            min-height: 285mm !important;
-            max-width: 100% !important;
-            margin: 0 !important;
+            position: relative !important;
+            left: auto !important;
+            top: auto !important;
+            transform: none !important;
+            width: 100% !important;
+            max-width: 800px !important;
+            min-height: 1050px !important;
+            margin: 0 auto !important;
             padding: 12mm !important;
             box-shadow: none !important;
             border: 3px solid #0c1b33 !important;
@@ -358,6 +430,11 @@ export default function CertificatesAdminPage() {
             box-sizing: border-box !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            display: block !important;
+            visibility: visible !important;
+          }
+          #official-certificate-print-area * {
+            visibility: visible !important;
           }
         }
       `}} />
@@ -1148,7 +1225,7 @@ export default function CertificatesAdminPage() {
                 <div className="text-center space-y-1">
                   <div className="inline-block p-1.5 bg-white border border-slate-300 rounded-lg shadow-xs">
                     <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('https://yuktisoftware.com/verify?id=' + (previewDoc.id || previewDoc.certId))}`}
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('https://www.yuktisoftware.com/verify/')}`}
                       alt="Verify QR Code"
                       className="w-14 h-14 sm:w-16 sm:h-16 object-contain"
                     />
