@@ -15,7 +15,8 @@ import {
   ExternalLink,
   ShieldCheck,
   Sparkles,
-  BookOpen
+  BookOpen,
+  Newspaper
 } from 'lucide-react';
 
 const MENU_ITEMS = [
@@ -26,6 +27,7 @@ const MENU_ITEMS = [
   { id: 'announcements', label: 'Announcements & Banner', icon: Megaphone },
   { id: 'reviews', label: 'Student Reviews & Stories', icon: MessageSquareQuote },
   { id: 'enquiries', label: 'Leads & Enquiries', icon: Inbox, badge: 'Live' },
+  { id: 'blogs', label: 'Blog & Article Studio', icon: Newspaper },
   { id: 'gallery', label: 'Gallery Media', icon: ImageIcon },
   { id: 'team', label: 'Meet the Team', icon: Users },
   { id: 'internships', label: 'Internships & Careers', icon: Briefcase },

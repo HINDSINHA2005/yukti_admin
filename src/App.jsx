@@ -12,6 +12,7 @@ import BatchesAdminPage from './pages/BatchesAdminPage';
 import CertificatesAdminPage from './pages/CertificatesAdminPage';
 import AnnouncementsAdminPage from './pages/AnnouncementsAdminPage';
 import ReviewsAdminPage from './pages/ReviewsAdminPage';
+import BlogsAdminPage from './pages/BlogsAdminPage';
 import WorkshopRegistrationsAdminPage from './pages/WorkshopRegistrationsAdminPage';
 import SettingsPage from './pages/SettingsPage';
 import { getEnquiries, getCollectionItems } from './services/adminService';
@@ -126,6 +127,8 @@ export default function App() {
         return { title: 'Workshop Registrations & Accreditation', subtitle: 'Manage college workshop attendees, sort by campus & issue verified credentials' };
       case 'enquiries':
         return { title: 'Enquiries & Lead Management', subtitle: 'Manage submissions from website forms' };
+      case 'blogs':
+        return { title: 'Admin Blog Management', subtitle: 'Publish tutorials, technical guides & industry articles to website' };
       case 'gallery':
         return { title: 'Photo & Video Gallery', subtitle: 'Upload and edit gallery media' };
       case 'team':
@@ -206,6 +209,10 @@ export default function App() {
               onRefresh={loadAllData}
               isLoading={isRefreshing}
             />
+          )}
+
+          {activeTab === 'blogs' && (
+            <BlogsAdminPage />
           )}
 
           {activeTab === 'gallery' && (
