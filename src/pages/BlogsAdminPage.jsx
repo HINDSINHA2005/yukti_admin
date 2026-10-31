@@ -41,6 +41,7 @@ import {
   Check
 } from 'lucide-react';
 import { getCollectionItems, addItem, updateItem, deleteItem } from '../services/adminService';
+import { renderBlogContent, cleanAndNormalizeHtml } from '../utils/blogRenderer';
 
 // Default initial articles matching main website
 const INITIAL_BLOG_TEMPLATES = [
@@ -751,13 +752,36 @@ export default function BlogsAdminPage() {
                   >
                     <TableIcon className="w-3.5 h-3.5" />
                   </button>
+
+                  <span className="h-4 w-px bg-slate-300 mx-1" />
+
+                  {/* Clean & Normalize Typography Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!form.content) return;
+                      const cleaned = cleanAndNormalizeHtml(form.content);
+                      setForm(prev => ({ ...prev, content: cleaned }));
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold flex items-center space-x-1 border border-emerald-200 transition-colors"
+                    title="Clean HTML boilerplate, strip invasive inline fonts, and standardize typography"
+                  >
+                    <Sparkles className="w-3 h-3 text-emerald-600" />
+                    <span>Clean & Format HTML</span>
+                  </button>
                 </div>
 
                 {/* View switcher on the right */}
                 <div className="flex items-center space-x-1 bg-white p-0.5 rounded-xl border border-slate-200">
                   <button
                     type="button"
-                    onClick={() => setEditorTab('visual')}
+                    onClick={() => {
+                      // Automatically strip document wrappers (<!DOCTYPE>, <html>, <head>, <body>) on switching to visual
+                      if (form.content && (form.content.includes('<!DOCTYPE') || form.content.includes('<html') || form.content.includes('<head'))) {
+                        setForm(prev => ({ ...prev, content: cleanAndNormalizeHtml(prev.content) }));
+                      }
+                      setEditorTab('visual');
+                    }}
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 cursor-pointer ${
                       editorTab === 'visual'
                         ? 'bg-[#198754] text-white shadow-2xs'
@@ -791,17 +815,33 @@ export default function BlogsAdminPage() {
                   rows={16}
                   value={form.content}
                   onChange={(e) => setForm(prev => ({ ...prev, content: e.target.value }))}
-                  placeholder="Write your article content using markdown or HTML syntax. Use headings (##), code snippets (```), bullet lists, and paragraphs..."
+                  placeholder="Write your article content using markdown or HTML syntax. Use headings (## or <h2>), code snippets (``` or <pre>), bullet lists, and paragraphs..."
                   className="w-full p-4 rounded-b-2xl bg-white border border-t-0 border-slate-200 text-sm font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all leading-relaxed"
                 />
               ) : (
-                <div className="w-full min-h-[380px] p-6 rounded-b-2xl bg-white border border-t-0 border-slate-200 prose max-w-none text-slate-800 text-sm leading-relaxed overflow-y-auto">
+                <div className="w-full min-h-[420px] p-6 sm:p-8 rounded-b-2xl bg-white border border-t-0 border-slate-200 overflow-y-auto">
                   {form.content ? (
-                    <div className="space-y-4 whitespace-pre-line">
-                      {form.content}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100 text-xs text-slate-400">
+                        <span className="flex items-center gap-1 font-semibold text-emerald-600">
+                          <Eye className="w-3.5 h-3.5" /> Live Visual Article UI (Formatted as readers will see it)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setEditorTab('code')}
+                          className="hover:text-slate-700 underline cursor-pointer"
+                        >
+                          Switch to Code mode to edit HTML
+                        </button>
+                      </div>
+                      {renderBlogContent(form.content)}
                     </div>
                   ) : (
-                    <p className="text-slate-400 italic">No content written yet. Switch to Code mode to write or paste your article.</p>
+                    <div className="text-center py-16 text-slate-400 space-y-2">
+                      <BookOpen className="w-8 h-8 mx-auto text-slate-300" />
+                      <p className="text-sm font-medium">No content written yet.</p>
+                      <p className="text-xs">Switch to Code mode to write or paste your HTML/Markdown article.</p>
+                    </div>
                   )}
                 </div>
               )}
